@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ch.maxence.jcrgc;
+package ch.albasim.tools.jcrgc;
 
 import ch.qos.logback.classic.Logger;
 import com.mongodb.DB;
@@ -49,21 +49,27 @@ public class GC {
         }
     }
 
-    public void close(){
+    public void close() {
         nodeStore.dispose();
     }
 
-    public void revisionGC() {
+    /**
+     *
+     * @param maxAge in seconds
+     */
+    public void revisionGC(Long maxAge) {
         logger.info("revisionGC(): OAK GarbageCollection");
         try {
             if (nodeStore != null) {
+                long eMaxAge = (maxAge != null ? maxAge : 60 * 60 * 24);
+
                 VersionGarbageCollector versionGc = nodeStore.getVersionGarbageCollector();
                 logger.info("revisionGC(): start VersionGC");
-                VersionGarbageCollector.VersionGCStats gc = versionGc.gc(1, TimeUnit.DAYS);
+                VersionGarbageCollector.VersionGCStats gc = versionGc.gc(eMaxAge, TimeUnit.SECONDS);
                 logger.info("revisionGC(): versionGC done: {}", gc);
 
-                // GC blobs older than 1 day (60*60*24 sec => 86400 sec => 1 day)
-                MarkSweepGarbageCollector blobGC = nodeStore.createBlobGarbageCollector(60 * 60 * 24, "oak");
+
+                MarkSweepGarbageCollector blobGC = nodeStore.createBlobGarbageCollector(eMaxAge, "oak");
 
                 if (blobGC != null) {
                     try {
